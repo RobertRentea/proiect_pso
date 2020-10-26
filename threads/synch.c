@@ -278,7 +278,8 @@ lock_release (struct lock *lock)
 
   if (!list_empty (&lock->waiters)) 
     thread_unblock (list_entry (list_pop_front (&lock->waiters), struct thread, elem));
-   intr_set_level (old_level);
+   
+  intr_set_level (old_level);
 
 }
 

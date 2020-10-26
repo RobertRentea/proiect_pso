@@ -404,7 +404,7 @@ thread_recompute_priority(void)
     {
       struct thread* t = list_entry (thread_elem, struct thread, elem);
       if(t->priority > maximum_prio)
-        maximum_prio = l->holder->priority;
+        maximum_prio = t->priority;
     }
   }
   crt_thread->priority = maximum_prio;
