@@ -76,7 +76,7 @@ bool compare_threads(const struct list_elem *e1, const struct list_elem *e2, voi
 	struct thread* t1 = list_entry(e1, struct thread, elem);
 	struct thread* t2 = list_entry(e2, struct thread, elem);
 
-	return thread_get_priority(t2) <= thread_get_priority(t1);
+	return thread_get_priority(t2) < thread_get_priority(t1);
 }
 
 
@@ -105,7 +105,7 @@ thread_init (void)
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
-  init_thread (initial_thread, "main", PRI_DEFAULT);
+  init_thread (initial_thread, "main", PRI_MIN);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 }
@@ -250,8 +250,6 @@ thread_block (void)
    be important: if the caller had disabled interrupts itself,
    it may expect that it can atomically unblock a thread and
    update other data. */
-
-
 void
 thread_unblock (struct thread *t) 
 {
@@ -271,10 +269,10 @@ thread_unblock (struct thread *t)
   intr_set_level (old_level);
 
   if (thread_get_priority(thread_current()) < thread_get_priority(t)) {
-    if (!intr_context())
-      thread_yield();
-    else
-      intr_yield_on_return ();
+	if (!intr_context())
+		thread_yield();
+  	else
+		intr_yield_on_return ();
   }
 
 
@@ -376,11 +374,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
-  struct thread *firstTh;
-  firstTh = next_thread_to_run();
-  if (new_priority < firstTh->priority){
-    thread_yield();
+  thread_current ()->real_priority = new_priority;
+  if(new_priority > thread_get_priority(thread_current()))
+  {
+    thread_current ()->priority = new_priority;
   }
 }
 
@@ -407,7 +404,7 @@ thread_recompute_priority(void)
     {
       struct thread* t = list_entry (thread_elem, struct thread, elem);
       if(t->priority > maximum_prio)
-        maximum_prio = l->holder->priority;
+        maximum_prio = t->priority;
     }
   }
   crt_thread->priority = maximum_prio;
