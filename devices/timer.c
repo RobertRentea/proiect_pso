@@ -7,6 +7,7 @@
 #include "threads/interrupt.h"
 #include "threads/synch.h"
 #include "threads/thread.h"
+
   
 /* See [8254] for hardware details of the 8254 timer chip. */
 
@@ -29,6 +30,44 @@ static bool too_many_loops (unsigned loops);
 static void busy_wait (int64_t loops);
 static void real_time_sleep (int64_t num, int32_t denom);
 static void real_time_delay (int64_t num, int32_t denom);
+static struct list alarm_clock_list;
+
+bool
+alarm_clock_compare(struct list_elem t1, struct list_elem t2, void* aux)
+{
+  struct alarm_clock* alarm1, *alarm2;
+  alarm1 = list_entry(&t1,struct alarm_clock, alarm_clock_elem);
+  alarm2 = list_entry(&t2, struct alarm_clock, alarm_clock_elem);
+  if(alarm1->waking_time < alarm2->waking_time)
+    return 1;
+  else
+    return 0;
+}
+
+bool
+alarm_clock_check(struct alarm_clock* alarm)
+{
+  if(alarm->waking_time>=timer_ticks())
+  {
+    if(!list_empty(&alarm_clock_list)){
+     list_pop_front(&alarm_clock_list);
+     thread_unblock(alarm->thread);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+void 
+alarm_clock_check_all(void)
+{
+   struct list_elem *e;
+    for (e = list_begin (&alarm_clock_list); e != list_end (&alarm_clock_list);e = list_next (e))
+  {
+    if(0==alarm_clock_check(list_entry(e, struct alarm_clock, alarm_clock_elem)))
+      break;
+  }
+}
 
 /* Sets up the timer to interrupt TIMER_FREQ times per second,
    and registers the corresponding interrupt. */
@@ -37,6 +76,8 @@ timer_init (void)
 {
   pit_configure_channel (0, 2, TIMER_FREQ);
   intr_register_ext (0x20, timer_interrupt, "8254 Timer");
+  list_init(&alarm_clock_list);
+
 }
 
 /* Calibrates loops_per_tick, used to implement brief delays. */
@@ -89,11 +130,21 @@ timer_elapsed (int64_t then)
 void
 timer_sleep (int64_t ticks) 
 {
-  int64_t start = timer_ticks ();
+  struct alarm_clock* alarm;
 
-  ASSERT (intr_get_level () == INTR_ON);
-  while (timer_elapsed (start) < ticks) 
-    thread_yield ();
+    alarm = (struct alarm_clock*) malloc(sizeof(struct alarm_clock));
+
+    alarm->waking_time = timer_ticks()+ticks;
+    alarm->thread = thread_current();
+    struct list_elem elem;
+    elem.next=NULL;
+    elem.prev=NULL;
+    alarm->alarm_clock_elem = elem;
+
+    list_insert_ordered(&alarm_clock_list, &alarm->alarm_clock_elem, alarm_clock_compare, NULL);
+    intr_disable();
+    thread_block();
+  
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be
@@ -172,6 +223,7 @@ timer_interrupt (struct intr_frame *args UNUSED)
 {
   ticks++;
   thread_tick ();
+  alarm_clock_check_all();
 }
 
 /* Returns true if LOOPS iterations waits for more than one timer
