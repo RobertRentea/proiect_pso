@@ -331,6 +331,18 @@ cond_init (struct condition *cond)
    interrupt handler.  This function may be called with
    interrupts disabled, but interrupts will be turned back on if
    we need to sleep. */
+
+bool
+cond_compare (struct list_elem *e1, struct list_elem *e2, void* aux){
+  struct semaphore *pSem1, *pSem2;
+  struct thread *pTh1, *pTh2;
+  pSem1 = list_entry(e1, struct semaphore_elem, elem);
+  pSem2 = list_entry(e2, struct semaphore_elem, elem);
+  pTh1 = list_entry(list_front(&pSem1->waiters), struct thread, elem);
+  pTh2 = list_entry(list_front(&pSem2->waiters), struct thread, elem);
+  return pTh1->priority > pTh2->priority;
+}
+
 void
 cond_wait (struct condition *cond, struct lock *lock) 
 {

@@ -76,7 +76,7 @@ bool compare_threads(const struct list_elem *e1, const struct list_elem *e2, voi
 	struct thread* t1 = list_entry(e1, struct thread, elem);
 	struct thread* t2 = list_entry(e2, struct thread, elem);
 
-	return thread_get_priority(t2) <= thread_get_priority(t1);
+	return thread_get_priority(t2) < thread_get_priority(t1);
 }
 
 
@@ -265,6 +265,11 @@ thread_unblock (struct thread *t)
   ASSERT (t->status == THREAD_BLOCKED);
   //list_push_back (&ready_list, &t->elem);
   list_insert_ordered(&ready_list, &t->elem, compare_threads, NULL);
+
+  // struct list_elem *e;
+  // for (e = list_begin (&ready_list); e != list_end (&ready_list); e = list_next (e))
+  //   msg("%d ", list_entry(e, struct thread, elem)->priority);
+  // msg("after an unblock");
 
   t->status = THREAD_READY;
 
