@@ -213,13 +213,13 @@ read_command_line (void)
   argv[argc] = NULL;
 
   /* Print kernel command line. */
-  printf ("Kernel command line:");
-  for (i = 0; i < argc; i++)
-    if (strchr (argv[i], ' ') == NULL)
-      printf (" %s", argv[i]);
-    else
-      printf (" '%s'", argv[i]);
-  printf ("\n");
+  // printf ("Kernel command line:");
+  // for (i = 0; i < argc; i++)
+  //   if (strchr (argv[i], ' ') == NULL)
+  //     printf (" %s", argv[i]);
+  //   else
+  //     printf (" '%s'", argv[i]);
+  // printf ("\n");
 
   return argv;
 }
@@ -227,6 +227,7 @@ read_command_line (void)
 /* Parses options in ARGV[]
    and returns the first non-option argument. */
 static char **
+
 parse_options (char **argv) 
 {
   for (; *argv != NULL && **argv == '-'; argv++)

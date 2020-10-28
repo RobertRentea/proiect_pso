@@ -21,7 +21,7 @@ typedef int tid_t;
 
 /* Thread priorities. */
 #define PRI_MIN 0                       /* Lowest priority. */
-#define PRI_DEFAULT 31                  /* Default priority. */
+#define PRI_DEFAULT 32                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
 /* A kernel thread or user process.
@@ -114,6 +114,8 @@ extern bool thread_mlfqs;
 
 void thread_init (void);
 void thread_start (void);
+
+bool compare_threads(const struct list_elem *e1, const struct list_elem *e2, void* aux);
 
 void thread_tick (void);
 void thread_print_stats (void);
