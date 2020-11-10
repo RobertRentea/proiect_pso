@@ -153,7 +153,7 @@ thread_tick (void)
 void
 thread_print_stats (void) 
 {
-  printf ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
+  msg ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
           idle_ticks, kernel_ticks, user_ticks);
 }
 
@@ -260,20 +260,10 @@ thread_unblock (struct thread *t)
   ASSERT (is_thread (t));
 
 
-//  printf("Thread %s in thread_unblock unblocking thread %s\n", thread_current()->name, t->name);
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   //list_push_back (&ready_list, &t->elem);
   list_insert_ordered(&ready_list, &t->elem, compare_threads, NULL);
-
-  // struct list_elem *e;
-  // for (e = list_begin (&ready_list); e != list_end (&ready_list); e = list_next (e))
-  //   msg("%d ", list_entry(e, struct thread, elem)->priority);
-  // msg("after an unblock");
-
-  t->status = THREAD_READY;
-
-  intr_set_level (old_level);
 
   if (thread_get_priority(thread_current()) < thread_get_priority(t)) {
     if (!intr_context())
@@ -281,7 +271,8 @@ thread_unblock (struct thread *t)
     else
       intr_yield_on_return ();
   }
-
+  t->status = THREAD_READY;
+  intr_set_level (old_level);
 
 }
 
@@ -381,10 +372,10 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
-  thread_current ()->priority = new_priority;
+  thread_current()->priority = new_priority;
   struct thread *firstTh;
   firstTh = next_thread_to_run();
-  if (new_priority < firstTh->priority){
+  if (new_priority < thread_get_priority(firstTh)){
     thread_yield();
   }
 }
