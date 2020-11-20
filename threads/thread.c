@@ -153,8 +153,8 @@ thread_tick (void)
 void
 thread_print_stats (void) 
 {
-  msg ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
-          idle_ticks, kernel_ticks, user_ticks);
+  // msg ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
+          // idle_ticks, kernel_ticks, user_ticks);
 }
 
 /* Creates a new kernel thread named NAME with the given initial
@@ -193,6 +193,10 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
+
+  list_init(&t->child_list);
+
+  list_push_back(&thread_current()->child_list, t);
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
@@ -250,8 +254,6 @@ thread_block (void)
    be important: if the caller had disabled interrupts itself,
    it may expect that it can atomically unblock a thread and
    update other data. */
-
-
 void
 thread_unblock (struct thread *t) 
 {
@@ -266,10 +268,10 @@ thread_unblock (struct thread *t)
   list_insert_ordered(&ready_list, &t->elem, compare_threads, NULL);
 
   if (thread_get_priority(thread_current()) < thread_get_priority(t)) {
-    if (!intr_context())
-      thread_yield();
-    else
-      intr_yield_on_return ();
+	if (!intr_context())
+		thread_yield();
+  	else
+		intr_yield_on_return ();
   }
   t->status = THREAD_READY;
   intr_set_level (old_level);
@@ -372,11 +374,17 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+
   thread_current()->priority = new_priority;
   struct thread *firstTh;
   firstTh = next_thread_to_run();
   if (new_priority < thread_get_priority(firstTh)){
     thread_yield();
+  }
+  thread_current ()->real_priority = new_priority;
+  if(new_priority > thread_get_priority(thread_current()))
+  {
+    thread_current ()->priority = new_priority;
   }
 }
 
@@ -403,7 +411,7 @@ thread_recompute_priority(void)
     {
       struct thread* t = list_entry (thread_elem, struct thread, elem);
       if(t->priority > maximum_prio)
-        maximum_prio = l->holder->priority;
+        maximum_prio = t->priority;
     }
   }
   crt_thread->priority = maximum_prio;

@@ -62,7 +62,6 @@ sema_init (struct semaphore *sema, unsigned value)
    interrupts disabled, but if it sleeps then the next scheduled
    thread will probably turn interrupts back on. */
 
-
 /* Down or "P" operation on a semaphore, but only if the
    semaphore is not already 0.  Returns true if the semaphore is
    decremented, false otherwise.
@@ -121,7 +120,7 @@ sema_self_test (void)
   struct semaphore sema[2];
   int i;
 
-  msg ("Testing semaphores...");
+  // msg ("Testing semaphores...");
   sema_init (&sema[0], 0);
   sema_init (&sema[1], 0);
   thread_create ("sema-test", PRI_DEFAULT, sema_test_helper, &sema);
@@ -130,7 +129,7 @@ sema_self_test (void)
       sema_up (&sema[0]);
       sema_down (&sema[1]);
     }
-  msg ("done.\n");
+  // msg ("done.\n");
 }
 
 /* Thread function used by sema_self_test(). */
