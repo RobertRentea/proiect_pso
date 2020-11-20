@@ -13,7 +13,7 @@ syscall_init (void)
 }
 
 static void
-syscall_handler (struct intr_frame *f UNUSED) 
+syscall_handler (struct intr_frame *f) 
 {
   int syscall_no = ((int*)f->esp)[0];
 	int fd, no;
@@ -55,6 +55,5 @@ syscall_handler (struct intr_frame *f UNUSED)
   }
   thread_exit ();
 }
-
 
 

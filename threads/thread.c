@@ -105,7 +105,7 @@ thread_init (void)
 
   /* Set up a thread structure for the running thread. */
   initial_thread = running_thread ();
-  init_thread (initial_thread, "main", PRI_MIN);
+  init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
   initial_thread->tid = allocate_tid ();
 }
@@ -153,8 +153,8 @@ thread_tick (void)
 void
 thread_print_stats (void) 
 {
-  printf ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
-          idle_ticks, kernel_ticks, user_ticks);
+  // msg ("Thread: %lld idle ticks, %lld kernel ticks, %lld user ticks\n",
+          // idle_ticks, kernel_ticks, user_ticks);
 }
 
 /* Creates a new kernel thread named NAME with the given initial
@@ -193,6 +193,10 @@ thread_create (const char *name, int priority,
   /* Initialize thread. */
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
+
+  list_init(&t->child_list);
+
+  list_push_back(&thread_current()->child_list, t);
 
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
@@ -258,20 +262,10 @@ thread_unblock (struct thread *t)
   ASSERT (is_thread (t));
 
 
-//  printf("Thread %s in thread_unblock unblocking thread %s\n", thread_current()->name, t->name);
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   //list_push_back (&ready_list, &t->elem);
   list_insert_ordered(&ready_list, &t->elem, compare_threads, NULL);
-
-  // struct list_elem *e;
-  // for (e = list_begin (&ready_list); e != list_end (&ready_list); e = list_next (e))
-  //   msg("%d ", list_entry(e, struct thread, elem)->priority);
-  // msg("after an unblock");
-
-  t->status = THREAD_READY;
-
-  intr_set_level (old_level);
 
   if (thread_get_priority(thread_current()) < thread_get_priority(t)) {
 	if (!intr_context())
@@ -279,7 +273,8 @@ thread_unblock (struct thread *t)
   	else
 		intr_yield_on_return ();
   }
-
+  t->status = THREAD_READY;
+  intr_set_level (old_level);
 
 }
 
@@ -379,6 +374,13 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 thread_set_priority (int new_priority) 
 {
+
+  thread_current()->priority = new_priority;
+  struct thread *firstTh;
+  firstTh = next_thread_to_run();
+  if (new_priority < thread_get_priority(firstTh)){
+    thread_yield();
+  }
   thread_current ()->real_priority = new_priority;
   if(new_priority > thread_get_priority(thread_current()))
   {
