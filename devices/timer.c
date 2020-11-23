@@ -47,11 +47,12 @@ alarm_clock_compare(struct list_elem t1, struct list_elem t2, void* aux)
 bool
 alarm_clock_check(struct alarm_clock* alarm)
 {
-  if(alarm->waking_time>=timer_ticks())
+  if(alarm->waking_time<=timer_ticks())
   {
     if(!list_empty(&alarm_clock_list)){
-     list_pop_front(&alarm_clock_list);
-     thread_unblock(alarm->thread);
+      
+      list_pop_front(&alarm_clock_list);
+      thread_unblock(alarm->thread);
     }
     return 1;
   }
@@ -140,11 +141,16 @@ timer_sleep (int64_t ticks)
     elem.next=NULL;
     elem.prev=NULL;
     alarm->alarm_clock_elem = elem;
+    enum intr_level old_level;
+
+    old_level = intr_disable();
+    thread_block();
 
     list_insert_ordered(&alarm_clock_list, &alarm->alarm_clock_elem, alarm_clock_compare, NULL);
-    intr_disable();
-    thread_block();
-  
+    
+
+    intr_set_level(old_level);
+    
 }
 
 /* Sleeps for approximately MS milliseconds.  Interrupts must be

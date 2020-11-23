@@ -194,10 +194,6 @@ thread_create (const char *name, int priority,
   init_thread (t, name, priority);
   tid = t->tid = allocate_tid ();
 
-  list_init(&t->child_list);
-
-  list_push_back(&thread_current()->child_list, t);
-
   /* Prepare thread for first run by initializing its stack.
      Do this atomically so intermediate values for the 'stack' 
      member cannot be observed. */
@@ -219,6 +215,10 @@ thread_create (const char *name, int priority,
   sf->ebp = 0;
 
   intr_set_level (old_level);
+
+  t->parent = thread_current();
+  list_push_back(&thread_current()->child_list, &(t->parent_elem));
+
 
   /* Add to run queue. */
   thread_unblock (t);
@@ -327,7 +327,10 @@ thread_exit (void)
      when it calls thread_schedule_tail(). */
   intr_disable ();
   list_remove (&thread_current()->allelem);
-  thread_current ()->status = THREAD_DYING;
+  if (thread_current()->parent->wait == WAITING){
+    sema_up(&thread_current()->parent->sema);
+  }
+  thread_current()->status = THREAD_DYING;
   schedule ();
   NOT_REACHED ();
 }
@@ -552,6 +555,12 @@ init_thread (struct thread *t, const char *name, int priority)
   t->real_priority = priority;
   t->magic = THREAD_MAGIC;
   t->waited_lock = NULL;
+  t->load_status = NOT_LOADED;
+  t->parent = NULL;
+  t->wait = NOT_WAITING;
+  list_init(&t->child_list);
+  sema_init(&t->sema, 0);
+
   list_init (&t->acquired_locks_list);
   list_push_back (&all_list, &t->allelem);
 

@@ -25,6 +25,16 @@ typedef int tid_t;
 #define PRI_DEFAULT 31                  /* Default priority. */
 #define PRI_MAX 63                      /* Highest priority. */
 
+
+#define NOT_LOADED 0
+#define LOAD_FAIL 2
+#define ERROR -1
+#define LOADED 1
+#define WAITING 1
+#define NOT_WAITING 0
+
+
+
 /* A kernel thread or user process.
 
    Each thread structure is stored in its own 4 kB page.  The
@@ -110,6 +120,10 @@ struct thread
 
    struct semaphore sema;
    struct thread *parent;
+   int load_status;
+   int wait;
+   int exit_status;
+   struct list_elem parent_elem;
   };
 
 /* If false (default), use round-robin scheduler.
